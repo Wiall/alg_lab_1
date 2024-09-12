@@ -128,7 +128,6 @@ partial class Program
         string outputFile = "output.txt";
         GenerateRandomData(inputFile, 1024 * 1024); // 10 MB
 
-        // Sort the file
         NaturalMergeSort.Sort(inputFile, outputFile);
 
         Console.WriteLine("Sorting complete. Sorted data is in " + outputFile);
