@@ -124,7 +124,6 @@ partial class Program
 {
     static void Main()
     {
-        // Generate random data for the input file (not less than 10 MB in size)
         string inputFile = "input.txt";
         string outputFile = "output.txt";
         GenerateRandomData(inputFile, 1024 * 1024); // 10 MB
