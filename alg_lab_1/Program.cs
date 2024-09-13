@@ -2,161 +2,87 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-class NaturalMergeSort
+using System.Diagnostics;
+
+namespace alg_lab_1
 {
-    public static void Sort(string inputFile, string outputFile)
+    class Program
     {
-        // Крок 1: Розбиття вхідного файлу на природні серії
-        List<string> seriesFiles = SplitIntoRuns(inputFile);
-
-        // Крок 2: Злиття серій до тих пір, поки не залишиться один відсортований файл
-        while (seriesFiles.Count > 1)
+        public static long compCount = 0;
+        public static int seriesSize;
+        
+        static void Main()
         {
-            List<string> newSeriesFiles = new List<string>();
+            
+   
+            string inputFile = "input.bin";
+            string outputFile = "output.bin";
+            string inputFileFormatted = "input.txt";
+            string outputFileFormatted = "output.txt";
 
-            for (int i = 0; i < seriesFiles.Count - 1; i += 2)
+            Console.WriteLine("Оберiть метод сортування:");
+            Console.WriteLine("1 - Немодифiкований метод сортування");
+            Console.WriteLine("2 - Модифiкований метод сортування");
+
+            string choice = Console.ReadLine();
+
+            Console.WriteLine("Виберiть метод генерацii даних:");
+            Console.WriteLine("1 - Стандартний метод генерацii");
+            Console.WriteLine("2 - Модифiкований метод генерацii");
+
+            string dataGenerationChoice = Console.ReadLine();
+
+            // Запитуємо користувача про розмір файлу
+            Console.WriteLine("Введiть розмiр файлу в мегабайтах (МБ):");
+            if (!int.TryParse(Console.ReadLine(), out int fileSizeMB) || fileSizeMB <= 0)
             {
-                string mergedFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".tmp");
-                MergeFiles(seriesFiles[i], seriesFiles[i + 1], mergedFile);
-                newSeriesFiles.Add(mergedFile);
-
-                // Видаляємо тимчасові файли, щоб звільнити місце
-                File.Delete(seriesFiles[i]);
-                File.Delete(seriesFiles[i + 1]);
+                Console.WriteLine("Неправильний ввiд. Будь ласка, введiть дiйсне додатне число.");
+                return;
+            }
+            
+            int fileSizeInBytes = fileSizeMB * 1024 * 1024; // Конвертуємо розмір з МБ в байти
+            // Генеруємо дані для сортування
+            if (dataGenerationChoice == "1")
+                DataGenerator.GenerateRandomData(inputFile, fileSizeInBytes);
+            else if (dataGenerationChoice == "2")
+                DataGenerator.GenerateRandomDataModified(inputFile, fileSizeInBytes, 8);
+            else
+            {
+                Console.WriteLine("Неправильний вибiр. Будь ласка, спробуйте ще раз.");
+                return;
             }
 
-            // Якщо залишився один файл, переносимо його далі
-            if (seriesFiles.Count % 2 != 0)
-                newSeriesFiles.Add(seriesFiles.Last());
-
-            seriesFiles = newSeriesFiles;
-        }
-
-        // Остаточно відсортований файл
-        File.Move(seriesFiles[0], outputFile);
-    }
-
-    private static List<string> SplitIntoRuns(string inputFile)
-    {
-        List<string> seriesFiles = new List<string>();
-        using (StreamReader reader = new StreamReader(inputFile))
-        {
-            List<int> currentRun = new List<int>();
-            string line;
-
-            if ((line = reader.ReadLine()) != null)
-                currentRun.Add(int.Parse(line));
-
-            while ((line = reader.ReadLine()) != null)
+            Stopwatch stopwatch = new Stopwatch();
+            
+            switch (choice)
             {
-                int number = int.Parse(line);
-                if (number < currentRun.Last())
-                {
-                    seriesFiles.Add(SaveRunToFile(currentRun));
-                    currentRun.Clear();
-                }
-                currentRun.Add(number);
+                case "1":
+                    Console.WriteLine("Використовується немодифiкований метод сортування...");
+                    stopwatch.Start();
+                    NaturalMergeSort.Sort(inputFile, outputFile);
+                    stopwatch.Stop();
+                    break;
+                case "2":
+                    Console.WriteLine("Використовується модифiкований метод сортування...");
+                    stopwatch.Start();
+                    NaturalMergeSortModified.Sort(inputFile, outputFile, seriesSize);
+                    stopwatch.Stop();
+                    break;
+                default:
+                    Console.WriteLine("Неправильний вибiр. Будь ласка, спробуйте ще раз.");
+                    return;
             }
 
-            if (currentRun.Count > 0)
-                seriesFiles.Add(SaveRunToFile(currentRun));
-        }
-        return seriesFiles;
-    }
+            TimeSpan timeTaken = stopwatch.Elapsed;
+            Console.WriteLine("Сортування завершено. Вiдсортованi данi знаходяться в " + outputFile);
+            Console.WriteLine($"Час виконання: {timeTaken.TotalSeconds} секунд");
+            Console.WriteLine($"Кiлькість порiвнянь: {compCount}");
+            
+            BinaryTextConverter.ConvertBinaryToText("input.bin", "inputFileFormatted.txt");
+            BinaryTextConverter.ConvertBinaryToText("output.bin", "outputFileFormatted.txt");
 
-    private static void MergeFiles(string file1, string file2, string outputFile)
-    {
-        using (StreamReader reader1 = new StreamReader(file1))
-        using (StreamReader reader2 = new StreamReader(file2))
-        using (StreamWriter writer = new StreamWriter(outputFile))
-        {
-            string line1 = reader1.ReadLine();
-            string line2 = reader2.ReadLine();
-
-            while (line1 != null && line2 != null)
-            {
-                int num1 = int.Parse(line1);
-                int num2 = int.Parse(line2);
-
-                if (num1 <= num2)
-                {
-                    writer.WriteLine(num1);
-                    line1 = reader1.ReadLine();
-                }
-                else
-                {
-                    writer.WriteLine(num2);
-                    line2 = reader2.ReadLine();
-                }
-            }
-
-            // Записуємо залишкові рядки
-            while (line1 != null)
-            {
-                writer.WriteLine(line1);
-                line1 = reader1.ReadLine();
-            }
-
-            while (line2 != null)
-            {
-                writer.WriteLine(line2);
-                line2 = reader2.ReadLine();
-            }
-        }
-    }
-    private static string SaveRunToFile(List<int> run)
-    {
-        // Генеруємо унікальне ім'я файлу в тимчасовому каталозі
-        string tempFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".tmp");
-    
-        using (StreamWriter writer = new StreamWriter(tempFile))
-        {
-            foreach (int number in run)
-                writer.WriteLine(number);
-        }
-        return tempFile;
-    }
-
-}
-
-
-partial class Program
-{
-    static void Main()
-    {
-        string inputFile = "input.txt";
-        string outputFile = "output.txt";
-        GenerateRandomData(inputFile, 1024 * 1024); // 10 MB
-
-        NaturalMergeSort.Sort(inputFile, outputFile);
-
-        Console.WriteLine("Sorting complete. Sorted data is in " + outputFile);
-    }
-
-    static void GenerateRandomData(string filename, int sizeInBytes, double orderProbability = 0.7)
-    {
-        Random random = new Random();
-        using (StreamWriter writer = new StreamWriter(filename))
-        {
-            int currentNumber = random.Next(0, 1000000);  // Початкове число
-            writer.WriteLine(currentNumber);  // Записуємо перше число
-
-            while (new FileInfo(filename).Length < sizeInBytes)
-            {
-                // Вирішуємо, чи наступне число буде більшим за попереднє, щоб зберегти порядок
-                if (random.NextDouble() < orderProbability)
-                {
-                    // Зберігаємо порядок (наростання)
-                    currentNumber += random.Next(1, 100);  // Додаємо випадкове мале число
-                }
-                else
-                {
-                    // Порушуємо порядок (перепад до випадкового числа)
-                    currentNumber = random.Next(0, 1000000);
-                }
-
-                writer.WriteLine(currentNumber);
-            }
+            Console.WriteLine("Бiнарнi файли перетворено в текстовi: {inputFileFormatted} та {outputFileFormatted}");
         }
     }
 }
+

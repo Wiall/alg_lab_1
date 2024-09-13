@@ -4,4 +4,3 @@ C:\Users\Анастасия\RiderProjects\alg_lab_1\alg_lab_1\obj\Debug\alg_lab_
 C:\Users\Анастасия\RiderProjects\alg_lab_1\alg_lab_1\obj\Debug\alg_lab_1.csproj.CoreCompileInputs.cache
 C:\Users\Анастасия\RiderProjects\alg_lab_1\alg_lab_1\obj\Debug\alg_lab_1.exe
 C:\Users\Анастасия\RiderProjects\alg_lab_1\alg_lab_1\obj\Debug\alg_lab_1.pdb
-C:\Users\Анастасия\RiderProjects\alg_lab_1\alg_lab_1\bin\Debug\alg_lab_1.exe.config
