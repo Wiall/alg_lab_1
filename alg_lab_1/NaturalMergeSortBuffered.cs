@@ -1,39 +1,43 @@
 ﻿using System;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace alg_lab_1
 {
-    public static class NaturalMergeSortModified
+    public static class NaturalMergeSortExternalMemory
     {
-        // Метод для виконання модифікованого природного злиття
         public static void Sort(string inputFile, string outputFile, long initialSeriesSize)
         {
-            string fileB = "fileB_modified.bin";
-            string fileC = "fileC_modified.bin";
+            string fileB = "fileB.dat";
+            string fileC = "fileC.dat";
             
             long currentSeriesSize = initialSeriesSize;
 
-            // Поки розмір серії не перевищить кількість елементів у файлі, продовжуємо сортування
             while (!IsSorted(inputFile, currentSeriesSize))
             {
                 Console.WriteLine("Вiдбувається сортування...");
-                // Поділ файлу на серії відомого розміру і розподіл між fileB та fileC
-                SplitFile(inputFile, fileB, fileC, currentSeriesSize);
 
-                // Злиття fileB та fileC назад у inputFile з поточним розміром серії
-                MergeFiles(inputFile, fileB, fileC, currentSeriesSize);
+                // Паралельний поділ файлів
+                Task splitTask = Task.Run(() => SplitFile(inputFile, fileB, fileC, currentSeriesSize));
 
-                // Подвоюємо розмір серії для наступного кроку
+                // Чекаємо завершення поділу
+                splitTask.Wait();
+
+                // Паралельне злиття
+                Task mergeTask = Task.Run(() => MergeFiles(inputFile, fileB, fileC, currentSeriesSize));
+
+                // Чекаємо завершення злиття
+                mergeTask.Wait();
+
                 currentSeriesSize *= 2;
             }
 
-            // Після завершення процесу копіюємо відсортовані дані в outputFile
             File.Copy(inputFile, outputFile, true);
         }
 
-        // Перевірка чи файл повністю відсортований, використовуючи відомий розмір серії
         private static bool IsSorted(string filename, long seriesSize)
         {
+            Console.WriteLine("Перевiряємо на вiдсортованiсть...");
             using (BinaryReader reader = new BinaryReader(File.Open(filename, FileMode.Open)))
             {
                 if (reader.BaseStream.Length == 0)
@@ -42,41 +46,50 @@ namespace alg_lab_1
                 long fileSize = reader.BaseStream.Length;
                 int elementsInFile = (int)(fileSize / sizeof(int));
 
-                // Якщо розмір серії перевищує кількість елементів, файл відсортований
                 return seriesSize >= elementsInFile;
             }
         }
 
-        // Розподіл файлу на серії відомого розміру між fileB та fileC
         private static void SplitFile(string inputFile, string fileB, string fileC, long seriesSize)
         {
             Console.WriteLine("Вiдбувається розділення...");
             Console.WriteLine($"Серія з {seriesSize} елементів");
+
+            const int bufferSize = 1024 * 1024 * 64;
+            int[] buffer = new int[bufferSize];
+            long elementsInSeries = 0;
+
             using (BinaryReader reader = new BinaryReader(File.Open(inputFile, FileMode.Open)))
-            using (BinaryWriter writerB = new BinaryWriter(File.Open(fileB, FileMode.Create)))
-            using (BinaryWriter writerC = new BinaryWriter(File.Open(fileC, FileMode.Create)))
+            using (BinaryWriter writerB = new BinaryWriter(new BufferedStream(File.Open(fileB, FileMode.Create), bufferSize * sizeof(int))))
+            using (BinaryWriter writerC = new BinaryWriter(new BufferedStream(File.Open(fileC, FileMode.Create), bufferSize * sizeof(int))))
             {
                 bool writeToB = true;
-                long elementsInSeries = 0;
 
                 while (reader.BaseStream.Position < reader.BaseStream.Length)
                 {
-                    // Console.WriteLine("РОЗДІЛЕННЯ");
-                    int current = reader.ReadInt32();
-                    (writeToB ? writerB : writerC).Write(current);
-                    elementsInSeries++;
-                    Console.WriteLine($"Write to B: {writeToB}");
-                    // Якщо кількість елементів у серії досягла розміру серії, змінюємо файл
-                    if (elementsInSeries >= seriesSize)
+                    int count = 0;
+
+                    for (int i = 0; i < bufferSize && reader.BaseStream.Position < reader.BaseStream.Length; i++)
                     {
-                        writeToB = !writeToB;
-                        elementsInSeries = 0;
+                        buffer[i] = reader.ReadInt32();
+                        count++;
+                    }
+
+                    for (int i = 0; i < count; i++)
+                    {
+                        (writeToB ? writerB : writerC).Write(buffer[i]);
+                        elementsInSeries++;
+
+                        if (elementsInSeries >= seriesSize)
+                        {
+                            writeToB = !writeToB;
+                            elementsInSeries = 0;
+                        }
                     }
                 }
             }
         }
 
-        // Злиття серій з fileB і fileC назад у inputFile з відомим розміром серії
         private static void MergeFiles(string outputFile, string fileB, string fileC, long seriesSize)
         {
             Console.WriteLine("Вiдбувається злиття...");
@@ -92,7 +105,6 @@ namespace alg_lab_1
 
                 while (valueB.HasValue || valueC.HasValue)
                 {
-                    // Якщо одна серія закінчилась у fileB, копіюємо елементи з fileC
                     if (countB >= seriesSize)
                     {
                         writer.Write(valueC.Value);
@@ -103,7 +115,6 @@ namespace alg_lab_1
                             countB = countC = 0;
                         }
                     }
-                    // Якщо одна серія закінчилась у fileC, копіюємо елементи з fileB
                     else if (countC >= seriesSize)
                     {
                         writer.Write(valueB.Value);
@@ -117,7 +128,6 @@ namespace alg_lab_1
                     else
                     {
                         Program.compCount++;
-                        // Порівнюємо і зливаємо поточні елементи серій з fileB і fileC
                         if (valueB <= valueC)
                         {
                             writer.Write(valueB.Value);
@@ -131,7 +141,6 @@ namespace alg_lab_1
                             countC++;
                         }
 
-                        // Якщо обидві серії завершилися, скидаємо лічильники
                         if (countB >= seriesSize && countC >= seriesSize)
                         {
                             countB = countC = 0;
@@ -139,7 +148,6 @@ namespace alg_lab_1
                     }
                 }
 
-                // Якщо одна серія закінчилася, залишок іншої копіюється до кінця
                 while (valueB.HasValue)
                 {
                     writer.Write(valueB.Value);

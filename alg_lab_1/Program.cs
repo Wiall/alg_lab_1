@@ -9,21 +9,23 @@ namespace alg_lab_1
     class Program
     {
         public static long compCount = 0;
-        public static int seriesSize;
+        public static long seriesSize;
         
         static void Main()
         {
             
    
-            string inputFile = "input.bin";
-            string outputFile = "output.bin";
+            string inputFile = "input.dat";
+            string nameCopy = "inputCopy.dat"; // Файл-копія
+            string outputFile = "output.dat";
             string inputFileFormatted = "input.txt";
             string outputFileFormatted = "output.txt";
 
             Console.WriteLine("Оберiть метод сортування:");
             Console.WriteLine("1 - Немодифiкований метод сортування");
             Console.WriteLine("2 - Модифiкований метод сортування");
-
+            Console.WriteLine("3 - Модифiкований 2 метод сортування");
+            
             string choice = Console.ReadLine();
 
             Console.WriteLine("Виберiть метод генерацii даних:");
@@ -34,24 +36,29 @@ namespace alg_lab_1
 
             // Запитуємо користувача про розмір файлу
             Console.WriteLine("Введiть розмiр файлу в мегабайтах (МБ):");
-            if (!int.TryParse(Console.ReadLine(), out int fileSizeMB) || fileSizeMB <= 0)
+            if (!long.TryParse(Console.ReadLine(), out long fileSizeMB) || fileSizeMB <= 0)
             {
                 Console.WriteLine("Неправильний ввiд. Будь ласка, введiть дiйсне додатне число.");
                 return;
             }
-            
-            int fileSizeInBytes = fileSizeMB * 1024 * 1024; // Конвертуємо розмір з МБ в байти
-            // Генеруємо дані для сортування
+            Console.WriteLine("fileSizeMB: " + fileSizeMB);
+            long fileSizeInBytes = fileSizeMB * 1024 * 1024;
+            Console.WriteLine("fileSizeInBytes: " + fileSizeInBytes);// Генеруємо дані для сортування
             if (dataGenerationChoice == "1")
                 DataGenerator.GenerateRandomData(inputFile, fileSizeInBytes);
             else if (dataGenerationChoice == "2")
-                DataGenerator.GenerateRandomDataModified(inputFile, fileSizeInBytes, 8);
+                DataGenerator.GenerateRandomDataModified(inputFile, fileSizeInBytes, 4);
             else
             {
                 Console.WriteLine("Неправильний вибiр. Будь ласка, спробуйте ще раз.");
                 return;
             }
 
+            using (FileStream sourceStream = new FileStream(inputFile, FileMode.Open, FileAccess.Read))
+            using (FileStream destinationStream = new FileStream(nameCopy, FileMode.Create, FileAccess.Write))
+            {
+                sourceStream.CopyTo(destinationStream); // Копіюємо дані з оригінального файлу у файл-копію
+            }
             Stopwatch stopwatch = new Stopwatch();
             
             switch (choice)
@@ -68,6 +75,12 @@ namespace alg_lab_1
                     NaturalMergeSortModified.Sort(inputFile, outputFile, seriesSize);
                     stopwatch.Stop();
                     break;
+                case "3":
+                    Console.WriteLine("Використовується модифiкований 2 метод сортування...");
+                    stopwatch.Start();
+                    NaturalMergeSortExternalMemory.Sort(inputFile, outputFile, seriesSize);
+                    stopwatch.Stop();
+                    break;
                 default:
                     Console.WriteLine("Неправильний вибiр. Будь ласка, спробуйте ще раз.");
                     return;
@@ -78,10 +91,10 @@ namespace alg_lab_1
             Console.WriteLine($"Час виконання: {timeTaken.TotalSeconds} секунд");
             Console.WriteLine($"Кiлькість порiвнянь: {compCount}");
             
-            BinaryTextConverter.ConvertBinaryToText("input.bin", "inputFileFormatted.txt");
-            BinaryTextConverter.ConvertBinaryToText("output.bin", "outputFileFormatted.txt");
+            ConvertToText.Convert(nameCopy, "inputFileFormatted.txt");
+            ConvertToText.Convert("output.dat", "outputFileFormatted.txt");
 
-            Console.WriteLine("Бiнарнi файли перетворено в текстовi: {inputFileFormatted} та {outputFileFormatted}");
+            Console.WriteLine($"Бiнарнi файли перетворено в текстовi: {inputFileFormatted} та {outputFileFormatted}");
         }
     }
 }

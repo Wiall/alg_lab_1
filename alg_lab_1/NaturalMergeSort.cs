@@ -1,184 +1,117 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 
 namespace alg_lab_1
 {
-    class NaturalMergeSort
+    public static class NaturalMergeSort
     {
+        // Метод для виконання природного злиття
         public static void Sort(string inputFile, string outputFile)
         {
-            // Крок 1: Розбиття вхідного файлу на серії та розподіл у два файли A і B
-            string fileA = Path.Combine(Path.GetTempPath(), "A.tmp");
-            string fileB = Path.Combine(Path.GetTempPath(), "B.tmp");
-            SplitIntoRuns(inputFile, fileA, fileB);
+            string fileB = "fileB.bin";
+            string fileC = "fileC.bin";
 
-            // Крок 2: Злиття серій з файлів A та B, поки не залишиться один відсортований файл
-            bool sorted = false;
-            while (!sorted)
+            // Поки у файлі більше ніж одна серія, продовжуємо сортування
+            while (!IsSorted(inputFile))
             {
-                sorted = MergeRuns(fileA, fileB, outputFile);
+                // Поділ файлу на серії і розподіл між fileB та fileC
+                SplitFile(inputFile, fileB, fileC);
 
-                // Після кожного злиття обмінюємо ролі файлів A та B для наступного етапу
-                string temp = fileA;
-                fileA = fileB;
-                fileB = temp;
+                // Злиття fileB та fileC назад у inputFile
+                MergeFiles(inputFile, fileB, fileC);
             }
 
-            // Переміщуємо остаточно відсортований файл
-            if (File.Exists(outputFile))
-            {
-                File.Delete(outputFile); // Видаляємо наявний файл, якщо він існує
-            }
-            File.Move(fileA, outputFile); // Переміщуємо файл
+            // Після завершення процесу копіюємо відсортовані дані в outputFile
+            File.Copy(inputFile, outputFile, true);
         }
 
-        private static void SplitIntoRuns(string inputFile, string fileA, string fileB)
+        // Перевіряємо чи файл вже повністю відсортований
+        private static bool IsSorted(string filename)
         {
-            using (BinaryReader reader = new BinaryReader(File.Open(inputFile, FileMode.Open)))
-            using (BinaryWriter writerA = new BinaryWriter(File.Open(fileA, FileMode.Create)))
-            using (BinaryWriter writerB = new BinaryWriter(File.Open(fileB, FileMode.Create)))
+            using (BinaryReader reader = new BinaryReader(File.Open(filename, FileMode.Open)))
             {
-                List<int> currentRun = new List<int>();
-                int? previousNumber = null;
-                bool writeToA = true;
+                if (reader.BaseStream.Length == 0)
+                    return true;
+
+                int prev = reader.ReadInt32();
 
                 while (reader.BaseStream.Position < reader.BaseStream.Length)
                 {
-                    int number = reader.ReadInt32();
-                    Program.compCount++; // лічильник порівнянь
+                    int current = reader.ReadInt32();
+                    if (current < prev)
+                        return false;
 
-                    // Якщо число порушує зростаючий порядок, зберігаємо поточну серію і починаємо нову
-                    if (previousNumber.HasValue && number < previousNumber.Value)
+                    prev = current;
+                }
+            }
+            return true;
+        }
+
+        // Розподіляємо серії між fileB та fileC
+        private static void SplitFile(string inputFile, string fileB, string fileC)
+        {
+            using (BinaryReader reader = new BinaryReader(File.Open(inputFile, FileMode.Open)))
+            using (BinaryWriter writerB = new BinaryWriter(File.Open(fileB, FileMode.Create)))
+            using (BinaryWriter writerC = new BinaryWriter(File.Open(fileC, FileMode.Create)))
+            {
+                bool writeToB = true;
+                int prev = reader.ReadInt32();
+                (writeToB ? writerB : writerC).Write(prev);
+
+                while (reader.BaseStream.Position < reader.BaseStream.Length)
+                {
+                    int current = reader.ReadInt32();
+
+                    // Якщо поточне число менше за попереднє, починається нова серія
+                    Program.compCount++;
+                    if (current < prev)
+                        writeToB = !writeToB;
+
+                    (writeToB ? writerB : writerC).Write(current);
+                    prev = current;
+                }
+            }
+        }
+
+        // Зливаємо серії з fileB і fileC назад у inputFile
+        private static void MergeFiles(string outputFile, string fileB, string fileC)
+        {
+            using (BinaryReader readerB = new BinaryReader(File.Open(fileB, FileMode.Open)))
+            using (BinaryReader readerC = new BinaryReader(File.Open(fileC, FileMode.Open)))
+            using (BinaryWriter writer = new BinaryWriter(File.Open(outputFile, FileMode.Create)))
+            {
+                int? valueB = readerB.BaseStream.Position < readerB.BaseStream.Length ? readerB.ReadInt32() : (int?)null;
+                int? valueC = readerC.BaseStream.Position < readerC.BaseStream.Length ? readerC.ReadInt32() : (int?)null;
+
+                while (valueB.HasValue || valueC.HasValue)
+                {
+                    if (!valueB.HasValue)
                     {
-                        WriteRunToFile(currentRun, writeToA ? writerA : writerB);
-                        currentRun.Clear();
-                        writeToA = !writeToA; // чергуємо файли
+                        writer.Write(valueC.Value);
+                        valueC = readerC.BaseStream.Position < readerC.BaseStream.Length ? readerC.ReadInt32() : (int?)null;
                     }
-
-                    currentRun.Add(number);
-                    previousNumber = number;
-                }
-
-                // Записуємо залишкову серію
-                if (currentRun.Count > 0)
-                {
-                    WriteRunToFile(currentRun, writeToA ? writerA : writerB);
-                }
-            }
-        }
-
-        private static void WriteRunToFile(List<int> run, BinaryWriter writer)
-        {
-            foreach (int number in run)
-            {
-                writer.Write(number);
-            }
-        }
-
-        private static bool MergeRuns(string fileA, string fileB, string outputFile)
-{
-    bool mergedAny = false;
-    
-    // Список для збереження тимчасових файлів після злиття
-    List<string> tempFiles = new List<string>();
-
-    using (BinaryReader readerA = new BinaryReader(File.Open(fileA, FileMode.Open, FileAccess.Read, FileShare.Read)))
-    using (BinaryReader readerB = new BinaryReader(File.Open(fileB, FileMode.Open, FileAccess.Read, FileShare.Read)))
-    {
-        while (readerA.BaseStream.Position < readerA.BaseStream.Length || readerB.BaseStream.Position < readerB.BaseStream.Length)
-        {
-            string tempFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".tmp");
-            tempFiles.Add(tempFile);
-
-            using (BinaryWriter writer = new BinaryWriter(File.Open(tempFile, FileMode.Create, FileAccess.Write, FileShare.None)))
-            {
-                mergedAny = true;
-
-                int a = readerA.BaseStream.Position < readerA.BaseStream.Length ? readerA.ReadInt32() : int.MaxValue;
-                int b = readerB.BaseStream.Position < readerB.BaseStream.Length ? readerB.ReadInt32() : int.MaxValue;
-
-                while (readerA.BaseStream.Position < readerA.BaseStream.Length || readerB.BaseStream.Position < readerB.BaseStream.Length)
-                {
-                    Program.compCount++; // Лічильник порівнянь
-                    if (a <= b)
+                    else if (!valueC.HasValue)
                     {
-                        writer.Write(a);
-                        a = readerA.BaseStream.Position < readerA.BaseStream.Length ? readerA.ReadInt32() : int.MaxValue;
+                        writer.Write(valueB.Value);
+                        valueB = readerB.BaseStream.Position < readerB.BaseStream.Length ? readerB.ReadInt32() : (int?)null;
                     }
                     else
                     {
-                        writer.Write(b);
-                        b = readerB.BaseStream.Position < readerB.BaseStream.Length ? readerB.ReadInt32() : int.MaxValue;
+                        Program.compCount++;
+                        // Зливаємо дві серії
+                        if (valueB <= valueC)
+                        {
+                            writer.Write(valueB.Value);
+                            valueB = readerB.BaseStream.Position < readerB.BaseStream.Length ? readerB.ReadInt32() : (int?)null;
+                        }
+                        else
+                        {
+                            writer.Write(valueC.Value);
+                            valueC = readerC.BaseStream.Position < readerC.BaseStream.Length ? readerC.ReadInt32() : (int?)null;
+                        }
                     }
                 }
             }
-        }
-    }
-
-    // Переміщуємо злиті файли в A та B, чергуючи між ними
-    bool toFileA = true;
-    foreach (var tempFile in tempFiles)
-    {
-        if (toFileA)
-        {
-            File.Copy(tempFile, fileA, true);
-        }
-        else
-        {
-            File.Copy(tempFile, fileB, true);
-        }
-        File.Delete(tempFile); // Видаляємо тимчасовий файл після копіювання
-        toFileA = !toFileA;
-    }
-
-    return !mergedAny; // Повертаємо, чи завершене сортування
-}
-
-
-        private static List<int> ReadNextRun(BinaryReader reader)
-        {
-            List<int> run = new List<int>();
-            if (reader.BaseStream.Position < reader.BaseStream.Length)
-            {
-                int number = reader.ReadInt32();
-                run.Add(number);
-                while (reader.BaseStream.Position < reader.BaseStream.Length)
-                {
-                    int nextNumber = reader.ReadInt32();
-                    if (nextNumber < number) break;
-                    run.Add(nextNumber);
-                    number = nextNumber;
-                }
-            }
-            return run;
-        }
-
-        private static void MergeAndWriteRuns(List<int> runA, List<int> runB, BinaryWriter writerA, BinaryWriter writerB)
-        {
-            int i = 0, j = 0;
-            bool writeToA = true;
-
-            while (i < runA.Count && j < runB.Count)
-            {
-                if (runA[i] <= runB[j])
-                {
-                    (writeToA ? writerA : writerB).Write(runA[i++]);
-                }
-                else
-                {
-                    (writeToA ? writerA : writerB).Write(runB[j++]);
-                }
-            }
-
-            // Записуємо залишок
-            while (i < runA.Count)
-                (writeToA ? writerA : writerB).Write(runA[i++]);
-            while (j < runB.Count)
-                (writeToA ? writerA : writerB).Write(runB[j++]);
-
-            // Після кожного злиття серій чергуємо записувач
-            writeToA = !writeToA;
         }
     }
 }
