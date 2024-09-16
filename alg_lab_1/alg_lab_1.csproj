@@ -189,6 +189,7 @@
     <ItemGroup>
         <Compile Include="ConvertToText.cs" />
         <Compile Include="DataGenerator.cs" />
+        <Compile Include="MenuHolder.cs" />
         <Compile Include="NaturalMergeSort.cs" />
         <Compile Include="NaturalMergeSortBuffered.cs" />
         <Compile Include="NaturalMergeSortImproved.cs" />

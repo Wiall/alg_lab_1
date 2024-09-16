@@ -5,27 +5,20 @@ namespace alg_lab_1
 {
     public static class NaturalMergeSort
     {
-        // Метод для виконання природного злиття
         public static void Sort(string inputFile, string outputFile)
         {
-            string fileB = "fileB.bin";
-            string fileC = "fileC.bin";
-
-            // Поки у файлі більше ніж одна серія, продовжуємо сортування
+            string fileB = "fileB.dat";
+            string fileC = "fileC.dat";
+            
             while (!IsSorted(inputFile))
             {
-                // Поділ файлу на серії і розподіл між fileB та fileC
                 SplitFile(inputFile, fileB, fileC);
-
-                // Злиття fileB та fileC назад у inputFile
                 MergeFiles(inputFile, fileB, fileC);
             }
 
-            // Після завершення процесу копіюємо відсортовані дані в outputFile
             File.Copy(inputFile, outputFile, true);
         }
-
-        // Перевіряємо чи файл вже повністю відсортований
+        
         private static bool IsSorted(string filename)
         {
             using (BinaryReader reader = new BinaryReader(File.Open(filename, FileMode.Open)))
@@ -47,7 +40,6 @@ namespace alg_lab_1
             return true;
         }
 
-        // Розподіляємо серії між fileB та fileC
         private static void SplitFile(string inputFile, string fileB, string fileC)
         {
             using (BinaryReader reader = new BinaryReader(File.Open(inputFile, FileMode.Open)))
@@ -62,7 +54,6 @@ namespace alg_lab_1
                 {
                     int current = reader.ReadInt32();
 
-                    // Якщо поточне число менше за попереднє, починається нова серія
                     Program.compCount++;
                     if (current < prev)
                         writeToB = !writeToB;
@@ -72,8 +63,7 @@ namespace alg_lab_1
                 }
             }
         }
-
-        // Зливаємо серії з fileB і fileC назад у inputFile
+        
         private static void MergeFiles(string outputFile, string fileB, string fileC)
         {
             using (BinaryReader readerB = new BinaryReader(File.Open(fileB, FileMode.Open)))
@@ -98,7 +88,6 @@ namespace alg_lab_1
                     else
                     {
                         Program.compCount++;
-                        // Зливаємо дві серії
                         if (valueB <= valueC)
                         {
                             writer.Write(valueB.Value);

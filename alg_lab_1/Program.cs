@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Diagnostics;
 
 namespace alg_lab_1
@@ -11,42 +9,44 @@ namespace alg_lab_1
         public static long compCount = 0;
         public static long seriesSize;
         
+        public static string[] options1 = new string[] 
+        {
+            "Оригiнальний метод сортування природнього злиття",
+            "Модифікований метод сортування (фiксовані впорядкованi серii)",
+            "Модифікований метод сортування (фiксовані впорядкованi серii + буфернi читання/запис)",
+            "Модифікований метод сортування (фiксовані впорядкованi серii + буфернi читання/запис + кiлькiсть ддопомiжних файлiв = кiлькостi серiй)"
+        };
+        public static string[] options2 = new string[] 
+        {
+            "Стандартний метод генерацii",
+            "Модифiкований метод генерацii"
+        };
         static void Main()
         {
             
-   
             string inputFile = "input.dat";
-            string nameCopy = "inputCopy.dat"; // Файл-копія
+            string nameCopy = "inputCopy.dat";
             string outputFile = "output.dat";
             string inputFileFormatted = "input.txt";
             string outputFileFormatted = "output.txt";
-
+            
             Console.WriteLine("Оберiть метод сортування:");
-            Console.WriteLine("1 - Немодифiкований метод сортування");
-            Console.WriteLine("2 - Модифiкований метод сортування");
-            Console.WriteLine("3 - Модифiкований 2 метод сортування");
-            Console.WriteLine("4 - Модифiкований 3 метод сортування");
-            string choice = Console.ReadLine();
-
+            int choice = MenuHolder.HoldMenu(options1);
+            
             Console.WriteLine("Виберiть метод генерацii даних:");
-            Console.WriteLine("1 - Стандартний метод генерацii");
-            Console.WriteLine("2 - Модифiкований метод генерацii");
-
-            string dataGenerationChoice = Console.ReadLine();
-
-            // Запитуємо користувача про розмір файлу
+            int dataGenerationChoice = MenuHolder.HoldMenu(options2);
+            
             Console.WriteLine("Введiть розмiр файлу в мегабайтах (МБ):");
             if (!long.TryParse(Console.ReadLine(), out long fileSizeMB) || fileSizeMB <= 0)
             {
                 Console.WriteLine("Неправильний ввiд. Будь ласка, введiть дiйсне додатне число.");
                 return;
             }
-            Console.WriteLine("fileSizeMB: " + fileSizeMB);
+
             long fileSizeInBytes = fileSizeMB * 1024 * 1024;
-            Console.WriteLine("fileSizeInBytes: " + fileSizeInBytes);// Генеруємо дані для сортування
-            if (dataGenerationChoice == "1")
+            if (dataGenerationChoice == 0)
                 DataGenerator.GenerateRandomData(inputFile, fileSizeInBytes);
-            else if (dataGenerationChoice == "2")
+            else if (dataGenerationChoice == 1)
                 DataGenerator.GenerateRandomDataModified(inputFile, fileSizeInBytes, 16);
             else
             {
@@ -57,40 +57,29 @@ namespace alg_lab_1
             using (FileStream sourceStream = new FileStream(inputFile, FileMode.Open, FileAccess.Read))
             using (FileStream destinationStream = new FileStream(nameCopy, FileMode.Create, FileAccess.Write))
             {
-                sourceStream.CopyTo(destinationStream); // Копіюємо дані з оригінального файлу у файл-копію
+                sourceStream.CopyTo(destinationStream);
             }
             Stopwatch stopwatch = new Stopwatch();
-            
+            stopwatch.Start();
             switch (choice)
             {
-                case "1":
-                    Console.WriteLine("Використовується немодифiкований метод сортування...");
-                    stopwatch.Start();
+                case 0:
                     NaturalMergeSort.Sort(inputFile, outputFile);
-                    stopwatch.Stop();
                     break;
-                case "2":
-                    Console.WriteLine("Використовується модифiкований метод сортування...");
-                    stopwatch.Start();
+                case 1:
                     NaturalMergeSortModified.Sort(inputFile, outputFile, seriesSize);
-                    stopwatch.Stop();
                     break;
-                case "3":
-                    Console.WriteLine("Використовується модифiкований 2 метод сортування...");
-                    stopwatch.Start();
+                case 2:
                     NaturalMergeSortBuffered.Sort(inputFile, outputFile, seriesSize);
-                    stopwatch.Stop();
                     break;
-                case "4":
-                    Console.WriteLine("Використовується модифiкований 3 метод сортування...");
-                    stopwatch.Start();
+                case 3:
                     NaturalMergeSortImproved.Sort(inputFile, outputFile, seriesSize);
-                    stopwatch.Stop();
                     break;
                 default:
                     Console.WriteLine("Неправильний вибiр. Будь ласка, спробуйте ще раз.");
                     return;
             }
+            stopwatch.Stop();
 
             TimeSpan timeTaken = stopwatch.Elapsed;
             Console.WriteLine("Сортування завершено. Вiдсортованi данi знаходяться в " + outputFile);
@@ -100,7 +89,7 @@ namespace alg_lab_1
             ConvertToText.Convert(nameCopy, "inputFileFormatted.txt");
             ConvertToText.Convert("output.dat", "outputFileFormatted.txt");
 
-            Console.WriteLine($"Бiнарнi файли перетворено в текстовi: {inputFileFormatted} та {outputFileFormatted}");
+            Console.WriteLine($"Файли перетворено в текстовi документи: {inputFileFormatted} та {outputFileFormatted}");
         }
     }
 }

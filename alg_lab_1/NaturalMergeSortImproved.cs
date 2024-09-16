@@ -6,10 +6,8 @@ using System.IO;
 
 class NaturalMergeSortImproved
 {
-    // Розмір буфера для читання/запису (залежить від доступної пам'яті)
     private const int BufferSize = 1024 * 1024; // 1 MB
-
-    // Основний метод сортування
+    
     public static void Sort(string inputFile, string outputFile, long seriesSize)
     {
         List<string> tempFiles = SplitIntoSeries(inputFile, seriesSize);
@@ -24,7 +22,6 @@ class NaturalMergeSortImproved
                     string mergedFile = Path.GetTempFileName();
                     MergeFiles(tempFiles[i], tempFiles[i + 1], mergedFile);
                     mergedFiles.Add(mergedFile);
-                    // Видаляємо тимчасові файли після злиття
                     File.Delete(tempFiles[i]);
                     File.Delete(tempFiles[i + 1]);
                 }
@@ -35,12 +32,10 @@ class NaturalMergeSortImproved
             }
             tempFiles = mergedFiles;
         }
-
-        // Переміщаємо результат у вихідний файл
+        
         File.Move(tempFiles[0], outputFile);
     }
-
-    // Розбиває вхідний файл на серії
+    
     private static List<string> SplitIntoSeries(string inputFile, long seriesSize)
     {
         List<string> tempFiles = new List<string>();
@@ -60,8 +55,7 @@ class NaturalMergeSortImproved
         }
         return tempFiles;
     }
-
-    // Читає серію елементів із файлу
+    
     private static int ReadSeries(BufferedStream reader, int[] buffer, long seriesSize)
     {
         byte[] bytes = new byte[seriesSize * sizeof(int)];
@@ -70,7 +64,6 @@ class NaturalMergeSortImproved
         return bytesRead / sizeof(int);
     }
 
-    // Записує серію елементів у файл
     private static void WriteSeries(BufferedStream writer, int[] buffer, int length)
     {
         byte[] bytes = new byte[length * sizeof(int)];
@@ -78,7 +71,6 @@ class NaturalMergeSortImproved
         writer.Write(bytes, 0, bytes.Length);
     }
 
-    // Злиття двох файлів в один
     private static void MergeFiles(string file1, string file2, string outputFile)
     {
         using (var reader1 = new BufferedStream(new FileStream(file1, FileMode.Open, FileAccess.Read), BufferSize))
@@ -93,6 +85,7 @@ class NaturalMergeSortImproved
 
             while (i < len1 && j < len2)
             {
+                Program.compCount++;
                 if (buffer1[i] <= buffer2[j])
                 {
                     WriteInt(writer, buffer1[i]);
@@ -117,20 +110,17 @@ class NaturalMergeSortImproved
                 }
             }
 
-            // Дозаписуємо залишки з обох файлів
             WriteRemaining(writer, reader1, buffer1, i, len1);
             WriteRemaining(writer, reader2, buffer2, j, len2);
         }
     }
-
-    // Записує окреме значення в потік
+    
     private static void WriteInt(BufferedStream writer, int value)
     {
         byte[] bytes = BitConverter.GetBytes(value);
         writer.Write(bytes, 0, bytes.Length);
     }
-
-    // Записує залишки серії у файл
+    
     private static void WriteRemaining(BufferedStream writer, BufferedStream reader, int[] buffer, int index, int length)
     {
         for (int i = index; i < length; i++)

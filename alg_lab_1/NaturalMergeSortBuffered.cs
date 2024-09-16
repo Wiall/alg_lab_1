@@ -14,15 +14,11 @@ namespace alg_lab_1
 
             while (!IsSorted(inputFile, currentSeriesSize))
             {
-                Console.WriteLine("Вiдбувається сортування...");
-
-                // Паралельний поділ файлів
                 SplitFile(inputFile, fileB, fileC, currentSeriesSize);
                 MergeFiles(inputFile, fileB, fileC, currentSeriesSize);
 
                 currentSeriesSize *= 2;
             }
-
             File.Copy(inputFile, outputFile, true);
         }
 
@@ -42,9 +38,6 @@ namespace alg_lab_1
 
         private static void SplitFile(string inputFile, string fileB, string fileC, long seriesSize)
         {
-            Console.WriteLine("Вiдбувається розділення...");
-            Console.WriteLine($"Серія з {seriesSize} елементів");
-
             const int bufferSize = 1024 * 1024 * 200;
             int[] buffer = new int[bufferSize];
             long elementsInSeries = 0;
@@ -82,7 +75,6 @@ namespace alg_lab_1
 
         private static void MergeFiles(string outputFile, string fileB, string fileC, long seriesSize)
         {
-            Console.WriteLine("Вiдбувається злиття...");
             using (BinaryReader readerB = new BinaryReader(File.Open(fileB, FileMode.Open)))
             using (BinaryReader readerC = new BinaryReader(File.Open(fileC, FileMode.Open)))
             using (BinaryWriter writer = new BinaryWriter(File.Open(outputFile, FileMode.Create)))

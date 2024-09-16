@@ -6,8 +6,7 @@ namespace alg_lab_1
     class ConvertToText
     {
         private const int BufferSize = 1024 * 1024; // 1 MB
-
-        // Конвертує двійковий файл у текстовий
+        
         public static void Convert(string inputFile, string outputTextFile)
         {
             using (var reader = new BufferedStream(new FileStream(inputFile, FileMode.Open, FileAccess.Read), BufferSize))
@@ -25,8 +24,7 @@ namespace alg_lab_1
                 }
             }
         }
-
-        // Читає серію елементів із файлу
+        
         private static int ReadSeries(BufferedStream reader, int[] buffer, int seriesSize)
         {
             byte[] bytes = new byte[seriesSize * sizeof(int)];
