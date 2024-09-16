@@ -25,7 +25,7 @@ namespace alg_lab_1
             Console.WriteLine("1 - Немодифiкований метод сортування");
             Console.WriteLine("2 - Модифiкований метод сортування");
             Console.WriteLine("3 - Модифiкований 2 метод сортування");
-            
+            Console.WriteLine("4 - Модифiкований 3 метод сортування");
             string choice = Console.ReadLine();
 
             Console.WriteLine("Виберiть метод генерацii даних:");
@@ -47,7 +47,7 @@ namespace alg_lab_1
             if (dataGenerationChoice == "1")
                 DataGenerator.GenerateRandomData(inputFile, fileSizeInBytes);
             else if (dataGenerationChoice == "2")
-                DataGenerator.GenerateRandomDataModified(inputFile, fileSizeInBytes, 4);
+                DataGenerator.GenerateRandomDataModified(inputFile, fileSizeInBytes, 16);
             else
             {
                 Console.WriteLine("Неправильний вибiр. Будь ласка, спробуйте ще раз.");
@@ -78,7 +78,13 @@ namespace alg_lab_1
                 case "3":
                     Console.WriteLine("Використовується модифiкований 2 метод сортування...");
                     stopwatch.Start();
-                    NaturalMergeSortExternalMemory.Sort(inputFile, outputFile, seriesSize);
+                    NaturalMergeSortBuffered.Sort(inputFile, outputFile, seriesSize);
+                    stopwatch.Stop();
+                    break;
+                case "4":
+                    Console.WriteLine("Використовується модифiкований 3 метод сортування...");
+                    stopwatch.Start();
+                    NaturalMergeSortImproved.Sort(inputFile, outputFile, seriesSize);
                     stopwatch.Stop();
                     break;
                 default:

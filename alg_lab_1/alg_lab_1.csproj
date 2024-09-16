@@ -191,6 +191,7 @@
         <Compile Include="DataGenerator.cs" />
         <Compile Include="NaturalMergeSort.cs" />
         <Compile Include="NaturalMergeSortBuffered.cs" />
+        <Compile Include="NaturalMergeSortImproved.cs" />
         <Compile Include="NaturalMergeSortModified.cs" />
         <Compile Include="Program.cs"/>
         <Compile Include="Properties\AssemblyInfo.cs"/>

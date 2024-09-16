@@ -1,15 +1,14 @@
 ﻿using System;
 using System.IO;
-using System.Threading.Tasks;
 
 namespace alg_lab_1
 {
-    public static class NaturalMergeSortExternalMemory
+    public static class NaturalMergeSortBuffered
     {
         public static void Sort(string inputFile, string outputFile, long initialSeriesSize)
         {
-            string fileB = "fileB.dat";
-            string fileC = "fileC.dat";
+            string fileB = "fileB_modified.bin";
+            string fileC = "fileC_modified.bin";
             
             long currentSeriesSize = initialSeriesSize;
 
@@ -18,16 +17,8 @@ namespace alg_lab_1
                 Console.WriteLine("Вiдбувається сортування...");
 
                 // Паралельний поділ файлів
-                Task splitTask = Task.Run(() => SplitFile(inputFile, fileB, fileC, currentSeriesSize));
-
-                // Чекаємо завершення поділу
-                splitTask.Wait();
-
-                // Паралельне злиття
-                Task mergeTask = Task.Run(() => MergeFiles(inputFile, fileB, fileC, currentSeriesSize));
-
-                // Чекаємо завершення злиття
-                mergeTask.Wait();
+                SplitFile(inputFile, fileB, fileC, currentSeriesSize);
+                MergeFiles(inputFile, fileB, fileC, currentSeriesSize);
 
                 currentSeriesSize *= 2;
             }
@@ -37,7 +28,6 @@ namespace alg_lab_1
 
         private static bool IsSorted(string filename, long seriesSize)
         {
-            Console.WriteLine("Перевiряємо на вiдсортованiсть...");
             using (BinaryReader reader = new BinaryReader(File.Open(filename, FileMode.Open)))
             {
                 if (reader.BaseStream.Length == 0)
@@ -55,7 +45,7 @@ namespace alg_lab_1
             Console.WriteLine("Вiдбувається розділення...");
             Console.WriteLine($"Серія з {seriesSize} елементів");
 
-            const int bufferSize = 1024 * 1024 * 64;
+            const int bufferSize = 1024 * 1024 * 200;
             int[] buffer = new int[bufferSize];
             long elementsInSeries = 0;
 
